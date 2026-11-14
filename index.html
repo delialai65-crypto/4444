@@ -197,6 +197,16 @@
                     <span id="lighting-icon">☀️</span>
                     <span id="lighting-text" class="hidden md:inline">日間球場</span>
                 </button>
+                <!-- Difficulty Selector Pill in Lobby -->
+                <div class="glass-panel rounded-xl px-2.5 py-1.5 flex items-center gap-1.5" title="調整比賽難度">
+                    <span class="text-xs">🎚️</span>
+                    <select id="lobby-difficulty-select" onchange="setDifficulty(this.value)" class="bg-transparent text-xs font-black text-amber-300 focus:outline-none cursor-pointer">
+                        <option value="EASY" class="bg-slate-900 text-emerald-300">🌱 休閒新秀 (球速慢/易打)</option>
+                        <option value="NORMAL" class="bg-slate-900 text-cyan-300" selected>⚾ 職業標準 (均衡對決)</option>
+                        <option value="HARD" class="bg-slate-900 text-orange-400">🔥 明星硬派 (快速球/邊角)</option>
+                        <option value="LEGEND" class="bg-slate-900 text-rose-400">💀 傳奇地獄 (168km/h 極限)</option>
+                    </select>
+                </div>
                 <!-- Audio & Announcer Toggle -->
                 <button id="lobby-audio-btn" class="glass-panel hover:bg-slate-800 rounded-xl px-3 py-2 text-xs font-bold flex items-center gap-1.5 cursor-pointer" title="音效與語音播報">
                     <span id="lobby-audio-icon">🔊</span>
@@ -338,6 +348,87 @@
                 </div>
                 <div id="events-list" class="flex-1 overflow-y-auto mt-4 space-y-3 pr-1">
                     <!-- Populated via JS -->
+                </div>
+            </div>
+
+            <!-- TAB 3B: 真實好友與即時連線對戰 (REAL FRIENDS & LIVE MULTIPLAYER) -->
+            <div id="tab-friends" class="lobby-tab hidden w-full max-w-6xl h-full max-h-[75vh] glass-panel rounded-3xl p-4 sm:p-5 flex flex-col pointer-events-auto">
+                <div class="pb-3 border-b border-slate-700/80 flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-lg sm:text-xl font-black text-white">👥 真實好友與連線大廳</h2>
+                            <span id="cloud-sync-badge" class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[10px] font-black">● 雲端即時連線中</span>
+                        </div>
+                        <p class="text-[11px] text-slate-400">複製你的專屬玩家 UID 給朋友，或輸入好友 UID 互加真實好友、聊天與發起對戰！</p>
+                    </div>
+                    <!-- My Sharable Player UID -->
+                    <div class="flex items-center gap-2 bg-slate-950/90 border border-cyan-400/40 rounded-2xl px-3 py-1.5">
+                        <div>
+                            <div class="text-[10px] text-slate-400 font-bold">我的專屬玩家 UID</div>
+                            <div id="my-player-uid" class="sport-font text-xs font-black text-cyan-300 select-all">載入中...</div>
+                        </div>
+                        <button onclick="copyMyUid()" class="px-2.5 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs cursor-pointer">
+                            📋 複製 UID
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-12 gap-3 mt-3">
+                    <!-- Left 7 Cols: Search/Add Friend, Pending Requests & Friends List -->
+                    <div class="lg:col-span-7 flex flex-col bg-slate-950/60 rounded-2xl p-3 border border-slate-800 overflow-hidden">
+                        <!-- Add Friend Input Bar -->
+                        <div class="flex gap-2 mb-3">
+                            <input id="friend-uid-input" type="text" placeholder="貼上好友的完整玩家 UID 搜尋並加好友..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400">
+                            <button onclick="sendFriendRequestByUid()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-black text-xs cursor-pointer whitespace-nowrap">
+                                ➕ 發送好友申請
+                            </button>
+                        </div>
+
+                        <!-- Incoming Friend Requests -->
+                        <div id="friend-requests-section" class="hidden mb-3 p-2.5 rounded-xl bg-amber-500/15 border border-amber-400/40">
+                            <div class="text-xs font-black text-amber-300 mb-1.5">📩 待確認的好友邀請</div>
+                            <div id="friend-requests-list" class="space-y-1.5"></div>
+                        </div>
+
+                        <!-- Friends List & Live Lobby Players -->
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="text-xs font-black text-white">我的真實好友名單 (<span id="friends-count">0</span>)</span>
+                            <span class="text-[11px] text-slate-400">可每日互送 🪙300 金幣禮包</span>
+                        </div>
+                        <div id="friends-list-container" class="flex-1 overflow-y-auto space-y-2 pr-1">
+                            <div class="text-center text-xs text-slate-400 py-6">尚無好友，快將上方 UID 分享給朋友或從右側大廳在線玩家添加！</div>
+                        </div>
+                    </div>
+
+                    <!-- Right 5 Cols: Online Players Directory & Real-Time Chat / Challenge Box -->
+                    <div class="lg:col-span-5 flex flex-col bg-slate-950/60 rounded-2xl p-3 border border-slate-800 overflow-hidden">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="text-xs font-black text-emerald-400">🌐 大廳即時在線玩家</span>
+                            <button onclick="openSquadModal()" class="px-2.5 py-1 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-[11px] cursor-pointer shadow flex items-center gap-1">
+                                🛡️ 4人職棒小隊 / 聯賽
+                            </button>
+                        </div>
+                        <div id="online-players-list" class="max-h-28 overflow-y-auto space-y-1.5 pr-1 pb-2 border-b border-slate-800">
+                            <!-- Populated via Cloud Snapshot -->
+                        </div>
+
+                        <!-- Real-time Chat & 1-on-1 Private Chat Switcher -->
+                        <div class="flex items-center justify-between mt-2 mb-1 gap-1">
+                            <span id="chat-target-label" class="text-xs font-black text-cyan-300 truncate">💬 全頻 / 好友共享頻道</span>
+                            <button id="chat-back-global-btn" onclick="switchChatChannel('GLOBAL', '全頻 / 好友共享頻道')" class="hidden px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-amber-300 cursor-pointer whitespace-nowrap">
+                                ↩ 返回全頻
+                            </button>
+                        </div>
+                        <div id="friend-chat-messages" class="flex-1 overflow-y-auto space-y-1.5 bg-slate-900/80 rounded-xl p-2.5 border border-slate-800 text-xs">
+                            <div class="text-slate-400 text-[11px]">歡迎來到球團即時聊天室！點擊好友列表的「💬 私訊」可切換 1對1 專屬頻道。</div>
+                        </div>
+                        <form onsubmit="sendRealTimeMessage(event)" class="flex gap-1.5 mt-2">
+                            <input id="friend-chat-input" type="text" maxlength="120" placeholder="輸入訊息與好友互動..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400">
+                            <button type="submit" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs cursor-pointer">
+                                發送
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
 
@@ -556,6 +647,10 @@
                 <button onclick="switchLobbyTab('shop')" data-tab="shop" class="nav-btn px-3 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm text-slate-300 hover:bg-slate-800 transition cursor-pointer whitespace-nowrap">
                     🛒 100選手商店與儲值
                 </button>
+                <button onclick="switchLobbyTab('friends')" data-tab="friends" class="nav-btn px-3 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm text-slate-300 hover:bg-slate-800 transition cursor-pointer whitespace-nowrap relative">
+                    👥 真實好友
+                    <span id="friend-req-dot" class="hidden absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                </button>
                 <button onclick="switchLobbyTab('events')" data-tab="events" class="nav-btn px-3 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm text-slate-300 hover:bg-slate-800 transition cursor-pointer whitespace-nowrap">
                     🎪 活動中心
                 </button>
@@ -656,6 +751,12 @@
                     <div id="hud-pitch-name" class="text-[11px] font-black text-cyan-400">準備投球</div>
                     <div id="hud-pitch-speed" class="sport-font text-sm font-bold text-white">-- KM/H</div>
                 </div>
+                <select id="hud-difficulty-select" onchange="setDifficulty(this.value)" class="glass-panel hover:bg-slate-800 p-2.5 rounded-xl text-xs font-black text-amber-300 focus:outline-none cursor-pointer" title="即時切換難度">
+                    <option value="EASY" class="bg-slate-900 text-emerald-300">🌱 新秀</option>
+                    <option value="NORMAL" class="bg-slate-900 text-cyan-300" selected>⚾ 職業</option>
+                    <option value="HARD" class="bg-slate-900 text-orange-400">🔥 明星</option>
+                    <option value="LEGEND" class="bg-slate-900 text-rose-400">💀 傳奇</option>
+                </select>
                 <button id="hud-camera-btn" class="glass-panel hover:bg-slate-800 p-2.5 rounded-xl text-xs font-bold cursor-pointer" title="切換視角">
                     🎥 <span class="hidden md:inline">視角</span>
                 </button>
@@ -711,332 +812,986 @@
                     <div></div>
                 </div>
 
-                <!-- Incoming Ball Indicator inside Zone Pad -->
-                <div id="zone-ball-dot" class="hidden absolute w-4 h-4 -ml-2 -mt-2 rounded-full bg-white border-2 border-rose-500 shadow-[0_0_10px_#fff] pointer-events-none"></div>
-
-                <!-- Batting PCI Sweet-Spot Reticle -->
-                <div id="pci-cursor" class="absolute w-20 h-14 -ml-10 -mt-7 rounded-full border-2 border-amber-400 bg-amber-400/25 shadow-[0_0_14px_rgba(250,204,21,0.8)] pointer-events-none flex items-center justify-center" style="left: 50%; top: 50%;">
-                    <div class="w-2.5 h-2.5 rounded-full bg-amber-300"></div>
+                <!-- PCI Batting Sweet-Spot Reticle -->
+                <div id="pci-cursor" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-11 h-11 sm:w-14 sm:h-14 rounded-full border-2 border-amber-400 bg-amber-400/20 shadow-[0_0_15px_rgba(250,204,21,0.5)] pointer-events-none flex items-center justify-center">
+                    <div class="w-2 h-2 rounded-full bg-amber-300"></div>
                 </div>
 
                 <!-- Pitching Target Cursor -->
-                <div id="pitch-target-cursor" class="hidden absolute w-8 h-8 -ml-4 -mt-4 rounded-full border-2 border-cyan-400 bg-cyan-400/25 shadow-[0_0_12px_rgba(56,189,248,0.8)] pointer-events-none flex items-center justify-center" style="left: 50%; top: 50%;">
-                    <div class="w-2 h-2 rounded-full bg-white"></div>
+                <div id="pitch-target-cursor" class="hidden absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full border-2 border-rose-500 bg-rose-500/25 pointer-events-none flex items-center justify-center">
+                    <div class="w-2 h-2 rounded-full bg-rose-400"></div>
                 </div>
+
+                <!-- Incoming Ball Marker -->
+                <div id="zone-ball-dot" class="hidden absolute w-4 h-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white border-2 border-rose-600 shadow-[0_0_10px_#fff] pointer-events-none"></div>
             </div>
         </div>
 
-        <!-- =========================================================
-             BOTTOM ACTION DECK: BATTING / BASERUNNING / PITCHING
-             ========================================================= -->
-        <div class="fixed bottom-3 left-3 right-3 flex flex-col items-center pointer-events-none">
+        <!-- Timing / Feedback Toast Pill -->
+        <div id="hud-timing-pill" class="fixed top-[20%] left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-slate-950/90 border border-amber-400/50 text-amber-300 font-black text-xs sm:text-sm opacity-0 transition-opacity duration-200 pointer-events-none z-30">
+            咬中甜蜜點！
+        </div>
+
+        <!-- Bottom Action Bar (Batting Controls vs Pitching Controls + Baserunning) -->
+        <div class="fixed bottom-3 left-3 right-3 sm:bottom-5 sm:left-5 sm:right-5 flex flex-wrap items-end justify-between gap-2 pointer-events-none">
             
-            <!-- Timing / Feedback Toast -->
-            <div id="hud-timing-pill" class="mb-2 px-3.5 py-1 rounded-full bg-slate-950/90 border border-white/20 text-xs font-extrabold text-amber-300 opacity-0 transition-opacity duration-200">
-                PERFECT TIMING!
+            <!-- Left: Manual Baserunning & Stealing Controls -->
+            <div id="baserunning-panel" class="glass-panel rounded-2xl p-2 flex items-center gap-1.5 pointer-events-auto">
+                <button onclick="commandBaserunners('ADVANCE')" class="px-2.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs cursor-pointer" title="熱鍵 E">🏃 進壘</button>
+                <button onclick="commandBaserunners('RETREAT')" class="px-2.5 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-xs cursor-pointer" title="熱鍵 Q">↩️ 回壘</button>
+                <button onclick="commandBaserunners('STEAL')" class="px-2.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs cursor-pointer" title="熱鍵 Shift+S">⚡ 盜壘</button>
+                <button onclick="commandBaserunners('TAGUP')" class="px-2.5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs cursor-pointer">🏷️ 觸壘跑</button>
             </div>
 
-            <!-- BATTING CONTROLS ROW (Swing + Manual Baserunning) -->
-            <div id="batting-controls-row" class="w-full max-w-4xl flex flex-wrap items-center justify-center sm:justify-between gap-2 pointer-events-auto">
-                
-                <!-- Left: Baserunning & Steal Controls -->
-                <div id="baserunning-panel" class="glass-panel rounded-2xl p-2 flex items-center gap-1.5">
-                    <button onclick="commandBaserunners('ADVANCE')" class="px-2.5 py-2 rounded-xl bg-emerald-600/80 hover:bg-emerald-500 text-white text-xs font-black cursor-pointer" title="全體進壘 (E)">
-                        🏃 進壘
-                    </button>
-                    <button onclick="commandBaserunners('RETREAT')" class="px-2.5 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold cursor-pointer" title="全體回壘 (Q)">
-                        ↩️ 回壘
-                    </button>
-                    <button onclick="commandBaserunners('STEAL')" class="px-2.5 py-2 rounded-xl bg-amber-600/90 hover:bg-amber-500 text-slate-950 text-xs font-black cursor-pointer" title="發動盜壘 (S)">
-                        ⚡ 盜壘
-                    </button>
-                    <button onclick="commandBaserunners('TAGUP')" class="px-2.5 py-2 rounded-xl bg-indigo-600/80 hover:bg-indigo-500 text-white text-xs font-bold cursor-pointer" title="高飛犧牲打觸壘起跑">
-                        🏷️ 觸壘跑
-                    </button>
-                </div>
-
-                <!-- Right: Main SWING Button -->
-                <button id="hud-swing-btn" class="btn-swing text-white sport-font text-xl sm:text-2xl font-black tracking-widest px-10 py-3.5 sm:px-14 sm:py-4 rounded-2xl border-2 border-red-300/40 cursor-pointer flex items-center gap-2">
-                    <span>揮棒 SWING</span>
-                    <span class="hidden md:inline text-[11px] font-sans bg-black/30 px-2 py-0.5 rounded text-red-100">SPACE</span>
+            <!-- Right: Batting Swing Row -->
+            <div id="batting-controls-row" class="ml-auto pointer-events-auto">
+                <button id="hud-swing-btn" class="btn-swing px-8 sm:px-12 py-3.5 sm:py-4 rounded-2xl text-white font-black text-lg sm:text-xl tracking-wider cursor-pointer">
+                    🏏 揮棒 (SWING)
                 </button>
             </div>
 
-            <!-- PITCHING CONTROLS ROW (Pitch Type + Stamina + PITCH Button) -->
-            <div id="pitching-controls-row" class="hidden w-full max-w-4xl flex flex-wrap items-center justify-center sm:justify-between gap-2 pointer-events-auto">
-                
-                <!-- Pitch Type Selector & Stamina -->
-                <div class="glass-panel rounded-2xl p-2 flex flex-wrap items-center gap-1.5">
-                    <button onclick="selectPitchType(0)" data-pitch="0" class="pitch-type-btn px-2.5 py-2 rounded-xl bg-rose-600 text-white text-xs font-black cursor-pointer">
-                        🔥 四縫線
-                    </button>
-                    <button onclick="selectPitchType(1)" data-pitch="1" class="pitch-type-btn px-2.5 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold cursor-pointer">
-                        🌀 曲球
-                    </button>
-                    <button onclick="selectPitchType(2)" data-pitch="2" class="pitch-type-btn px-2.5 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold cursor-pointer">
-                        ⚡ 滑球
-                    </button>
-                    <button onclick="selectPitchType(3)" data-pitch="3" class="pitch-type-btn px-2.5 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold cursor-pointer">
-                        🍃 變速球
-                    </button>
-                    <!-- Stamina Gauge -->
-                    <div class="pl-2 border-l border-slate-700 flex items-center gap-1.5">
-                        <span class="text-[10px] text-slate-400 font-bold">體力</span>
-                        <div class="w-16 h-2.5 bg-slate-800 rounded-full overflow-hidden">
-                            <div id="pitcher-stamina-bar" class="h-full bg-emerald-400 transition-all" style="width: 100%;"></div>
-                        </div>
-                        <span id="pitcher-stamina-text" class="sport-font text-xs font-bold text-emerald-300">100%</span>
+            <!-- Right: Pitching Selection & Throw Row -->
+            <div id="pitching-controls-row" class="hidden ml-auto glass-panel rounded-2xl p-2.5 flex flex-wrap items-center gap-2 pointer-events-auto">
+                <div class="flex flex-col gap-1 mr-1">
+                    <div class="flex justify-between text-[10px] font-bold text-slate-300">
+                        <span>投手體力</span>
+                        <span id="pitcher-stamina-text" class="text-emerald-400">100%</span>
+                    </div>
+                    <div class="w-24 h-2 bg-slate-800 rounded-full overflow-hidden">
+                        <div id="pitcher-stamina-bar" class="h-full bg-emerald-400 transition-all" style="width: 100%"></div>
                     </div>
                 </div>
-
-                <!-- Main PITCH Button -->
-                <button id="hud-pitch-btn" class="btn-pitch text-white sport-font text-xl sm:text-2xl font-black tracking-widest px-10 py-3.5 sm:px-14 sm:py-4 rounded-2xl border-2 border-cyan-300/40 cursor-pointer flex items-center gap-2">
-                    <span>投球 PITCH</span>
-                    <span class="hidden md:inline text-[11px] font-sans bg-black/30 px-2 py-0.5 rounded text-cyan-100">SPACE</span>
+                <div class="flex gap-1">
+                    <button onclick="selectPitchType(0)" data-pitch="0" class="pitch-type-btn px-2.5 py-2 rounded-xl bg-rose-600 text-white text-xs font-black cursor-pointer">速球</button>
+                    <button onclick="selectPitchType(1)" data-pitch="1" class="pitch-type-btn px-2.5 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold cursor-pointer">曲球</button>
+                    <button onclick="selectPitchType(2)" data-pitch="2" class="pitch-type-btn px-2.5 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold cursor-pointer">滑球</button>
+                    <button onclick="selectPitchType(3)" data-pitch="3" class="pitch-type-btn px-2.5 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold cursor-pointer">變速</button>
+                </div>
+                <button id="hud-pitch-btn" class="btn-pitch px-6 py-2.5 rounded-xl text-white font-black text-sm sm:text-base cursor-pointer">
+                    ⚾ 投球
                 </button>
             </div>
         </div>
     </div>
 
     <!-- =========================================================
-         SECTION 3: MODALS (AUTH, GACHA REVEAL, CHECKOUT & RECEIPT, SUMMARY)
+         SECTION 3: MODALS (MATCH SUMMARY, AUTH, SCOUT REVEAL, CHECKOUT)
          ========================================================= -->
-    
-    <!-- 1. ACCOUNT LOGIN / REGISTRATION / GUEST MODAL -->
-    <div id="auth-modal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
-        <div class="glass-panel max-w-md w-full rounded-3xl p-6 border border-cyan-400/30">
-            <div class="flex justify-between items-center pb-3 border-b border-slate-700">
-                <div class="flex items-center gap-2">
-                    <span class="text-xl">⚾</span>
-                    <h3 class="text-lg font-black text-white">球團會員中心 (雲端存檔)</h3>
-                </div>
-                <button onclick="closeAuthModal()" class="text-slate-400 hover:text-white text-xl cursor-pointer">✕</button>
+    <!-- Match Summary Modal -->
+    <div id="summary-modal" class="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="glass-panel rounded-3xl p-6 max-w-md w-full text-center border-2 border-amber-400/50">
+            <span id="sum-badge" class="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-black">比賽結束</span>
+            <h2 id="sum-title" class="text-2xl sm:text-3xl font-black text-white mt-2">🏆 逆轉勝利！</h2>
+            <p id="sum-desc" class="text-xs text-slate-300 mt-1">全隊上下一心拿下精彩勝利！</p>
+            <div id="sum-scoreline" class="sport-font text-xl font-black text-cyan-300 my-4 bg-slate-900/90 py-3 rounded-2xl border border-slate-800">
+                客隊 2 : 3 台北猛象
             </div>
+            <div id="sum-rewards" class="text-xs font-bold text-emerald-400 mb-5">獲得獎勵: +800 金幣 • +20 鑽石</div>
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="returnToLobby()" class="py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm cursor-pointer">返回大廳</button>
+                <button onclick="rematch()" class="py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-black text-sm cursor-pointer">再戰一場</button>
+            </div>
+        </div>
+    </div>
 
-            <!-- Logged-In Account Summary View -->
-            <div id="auth-logged-in-view" class="hidden my-4 space-y-4">
-                <div class="bg-slate-900/90 p-4 rounded-2xl border border-emerald-500/30 flex items-center justify-between">
-                    <div>
-                        <div class="text-xs text-emerald-400 font-bold">● 目前已登入帳號</div>
-                        <div id="auth-current-user" class="text-lg font-black text-white mt-0.5">ProBatter88</div>
-                        <div id="auth-current-email" class="text-xs text-slate-400">player@baseball3d.tw</div>
-                    </div>
-                    <span class="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-black">存檔同步中</span>
-                </div>
-                <div class="text-xs text-slate-300 leading-relaxed">
-                    你的 100 位選手圖鑑、強化等級、VIP 方案購買紀錄與生涯數據皆已安全綁定至此帳號。
-                </div>
-                <div class="grid grid-cols-2 gap-2.5 pt-2">
-                    <button onclick="logoutAccount()" class="py-3 rounded-xl bg-rose-600/80 hover:bg-rose-500 text-white font-black text-xs cursor-pointer">
-                        登出 / 切換帳號
-                    </button>
-                    <button onclick="closeAuthModal()" class="py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs cursor-pointer">
-                        返回遊戲
-                    </button>
+    <!-- Account Login / Register Modal -->
+    <div id="auth-modal" class="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="glass-panel rounded-3xl p-6 max-w-md w-full border border-cyan-400/40 relative">
+            <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg cursor-pointer">✕</button>
+            <div id="auth-logged-in-view" class="hidden text-center space-y-3">
+                <div class="w-14 h-14 mx-auto rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-2xl">⚾</div>
+                <h3 id="auth-current-user" class="text-xl font-black text-white">經理帳號</h3>
+                <p id="auth-current-email" class="text-xs text-slate-400">user@baseball3d.tw</p>
+                <div class="pt-3 flex gap-2">
+                    <button onclick="logoutAccount()" class="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs cursor-pointer">登出切換帳號</button>
+                    <button onclick="closeAuthModal()" class="flex-1 py-2.5 rounded-xl bg-slate-800 text-white font-bold text-xs cursor-pointer">關閉</button>
                 </div>
             </div>
-
-            <!-- Login / Register Form View -->
             <div id="auth-forms-view">
-                <!-- Sub-tabs -->
-                <div class="grid grid-cols-2 gap-2 my-4 bg-slate-900 p-1 rounded-xl">
-                    <button id="auth-tab-login" onclick="switchAuthTab('login')" class="py-2 rounded-lg bg-cyan-500 text-slate-950 font-black text-xs cursor-pointer">
-                        會員登入
-                    </button>
-                    <button id="auth-tab-register" onclick="switchAuthTab('register')" class="py-2 rounded-lg text-slate-300 font-bold text-xs cursor-pointer">
-                        註冊新帳號
-                    </button>
+                <div class="grid grid-cols-2 gap-1.5 bg-slate-900 p-1 rounded-xl mb-4">
+                    <button id="auth-tab-login" onclick="switchAuthTab('login')" class="py-2 rounded-lg bg-cyan-500 text-slate-950 font-black text-xs cursor-pointer">會員登入</button>
+                    <button id="auth-tab-register" onclick="switchAuthTab('register')" class="py-2 rounded-lg text-slate-300 font-bold text-xs cursor-pointer">註冊新帳號 (+200💎)</button>
                 </div>
-
-                <div id="auth-error-msg" class="hidden mb-3 px-3 py-2 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-bold"></div>
-
-                <!-- Login Form -->
+                <div id="auth-error-msg" class="hidden mb-3 p-2 rounded-lg bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-bold"></div>
                 <form id="login-form" onsubmit="handleLogin(event)" class="space-y-3">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-300 mb-1">帳號名稱或電子信箱</label>
-                        <input id="login-id" type="text" required placeholder="輸入帳號 (例如: MVP2026)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-300 mb-1">密碼</label>
-                        <input id="login-pass" type="password" required placeholder="請輸入密碼" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400">
-                    </div>
-                    <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-black text-sm cursor-pointer shadow-lg">
-                        立即登入球團
-                    </button>
+                    <input id="login-id" type="text" required placeholder="帳號名稱或電子信箱" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white">
+                    <input id="login-pass" type="password" required placeholder="密碼" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white">
+                    <button type="submit" class="w-full py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs cursor-pointer">立即登入並讀取存檔</button>
                 </form>
-
-                <!-- Register Form -->
                 <form id="register-form" onsubmit="handleRegister(event)" class="hidden space-y-3">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-300 mb-1">球團經理帳號 (3~12字)</label>
-                        <input id="reg-username" type="text" required minlength="3" maxlength="12" placeholder="設定你的遊戲暱稱" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-400">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-300 mb-1">電子信箱</label>
-                        <input id="reg-email" type="email" required placeholder="example@baseball.tw" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-400">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-300 mb-1">設定密碼 (至少 4 碼)</label>
-                        <input id="reg-pass" type="password" required minlength="4" placeholder="請設定登入密碼" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-400">
-                    </div>
-                    <div class="p-2.5 rounded-xl bg-amber-500/15 border border-amber-400/30 text-[11px] text-amber-200">
-                        🎁 新註冊禮遇：立即加贈 <strong>200 鑽石 + 3,000 金幣</strong>！
-                    </div>
-                    <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black text-sm cursor-pointer shadow-lg">
-                        完成註冊並領取新秀禮包
-                    </button>
+                    <input id="reg-username" type="text" required placeholder="設定球團經理帳號名稱" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white">
+                    <input id="reg-email" type="email" required placeholder="電子信箱 (Email)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white">
+                    <input id="reg-pass" type="password" required placeholder="設定登入密碼" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white">
+                    <button type="submit" class="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs cursor-pointer">完成註冊並領取 200💎 + 3,000🪙</button>
                 </form>
-
-                <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between">
-                    <span class="text-[11px] text-slate-400">暫不註冊？可使用本機遊客進度</span>
-                    <button onclick="continueAsGuest()" class="text-xs font-bold text-cyan-400 hover:text-cyan-300 cursor-pointer">
-                        繼續遊客體驗 →
-                    </button>
-                </div>
+                <button onclick="continueAsGuest()" class="mt-3 w-full py-2 text-xs text-slate-400 hover:text-white cursor-pointer">先以遊客身分體驗</button>
             </div>
         </div>
     </div>
 
-    <!-- 2. GACHA SCOUTING CARD REVEAL MODAL -->
-    <div id="scout-reveal-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
-        <div class="glass-panel max-w-3xl w-full rounded-3xl p-5 sm:p-6 border border-amber-400/40 flex flex-col max-h-[86vh]">
-            <div class="flex justify-between items-center pb-3 border-b border-slate-700">
-                <div>
-                    <h3 class="text-lg sm:text-xl font-black text-amber-300">🎴 球探招募簽約結果</h3>
-                    <p class="text-xs text-slate-300">新選手已加入選手庫，重複選手自動轉換為「選手突破碎片 🧩」</p>
-                </div>
-                <button onclick="closeScoutReveal()" class="px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-black text-xs cursor-pointer">全部收下</button>
-            </div>
-            <div id="scout-cards-container" class="flex-1 overflow-y-auto my-4 grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-                <!-- Populated via JS -->
-            </div>
+    <!-- Scout Reveal Modal -->
+    <div id="scout-reveal-modal" class="fixed inset-0 z-40 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="glass-panel rounded-3xl p-5 max-w-3xl w-full border-2 border-amber-400/50">
+            <h3 class="text-xl font-black text-center text-amber-400 mb-3">🎴 球探簽約結果</h3>
+            <div id="scout-cards-container" class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 max-h-[60vh] overflow-y-auto p-1"></div>
+            <button onclick="closeScoutReveal()" class="mt-4 w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm cursor-pointer">確認收下球員</button>
         </div>
     </div>
 
-    <!-- 3. MULTI-METHOD PAYMENT CHECKOUT MODAL -->
-    <div id="payment-modal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
-        <div class="glass-panel max-w-lg w-full rounded-3xl p-5 sm:p-6 border border-cyan-400/30 max-h-[92vh] overflow-y-auto">
-            <div class="flex justify-between items-center pb-3 border-b border-slate-700">
-                <h3 class="text-lg font-black text-white">💳 方案購買與安全結帳中心</h3>
-                <button onclick="closePaymentModal()" class="text-slate-400 hover:text-white text-xl cursor-pointer">✕</button>
+    <!-- Checkout Payment Modal -->
+    <div id="payment-modal" class="fixed inset-0 z-40 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="glass-panel rounded-3xl p-5 max-w-md w-full border border-cyan-400/40 relative">
+            <button onclick="closePaymentModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white cursor-pointer">✕</button>
+            <span id="pay-item-tag" class="px-2.5 py-0.5 rounded bg-amber-400 text-slate-950 text-[10px] font-black">方案結帳</span>
+            <h3 id="pay-item-name" class="text-lg font-black text-white mt-1.5">職棒 VIP 豪華季票</h3>
+            <p id="pay-item-desc" class="text-xs text-slate-300 mt-1">立即獲得鑽石與 VIP 特權</p>
+
+            <div class="mt-3 flex gap-1.5">
+                <input id="promo-code-input" type="text" placeholder="輸入折扣碼 (試試 BASEBALL2026)" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white">
+                <button onclick="applyPromoCode()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold text-xs cursor-pointer">套用</button>
+            </div>
+            <div id="promo-status-text" class="hidden text-[11px] text-emerald-400 font-bold mt-1">✓ 已套用 9 折優惠折扣碼！</div>
+
+            <div class="grid grid-cols-4 gap-1.5 mt-3">
+                <button onclick="selectPayMethod('CREDIT')" data-pay="CREDIT" class="pay-method-btn py-2.5 px-2 rounded-xl bg-cyan-500/20 border-2 border-cyan-400 text-xs font-bold text-white cursor-pointer">💳 信用卡</button>
+                <button onclick="selectPayMethod('LINEPAY')" data-pay="LINEPAY" class="pay-method-btn py-2.5 px-2 rounded-xl bg-slate-900 border border-slate-700 text-xs font-bold text-slate-300 cursor-pointer">LINE Pay</button>
+                <button onclick="selectPayMethod('APPLEPAY')" data-pay="APPLEPAY" class="pay-method-btn py-2.5 px-2 rounded-xl bg-slate-900 border border-slate-700 text-xs font-bold text-slate-300 cursor-pointer">Apple Pay</button>
+                <button onclick="selectPayMethod('CVS')" data-pay="CVS" class="pay-method-btn py-2.5 px-2 rounded-xl bg-slate-900 border border-slate-700 text-xs font-bold text-slate-300 cursor-pointer">🏪 超商</button>
             </div>
 
-            <!-- Order Summary Box -->
-            <div class="my-3.5 bg-slate-900/90 p-4 rounded-2xl border border-slate-800">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <span id="pay-item-tag" class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-black">尊榮通行證</span>
-                        <div id="pay-item-name" class="text-lg font-black text-white mt-1">職棒 VIP 豪華季票</div>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-[11px] text-slate-400">應付金額</div>
-                        <div id="pay-item-price" class="sport-font text-2xl font-black text-amber-400">NT$ 490</div>
-                    </div>
-                </div>
-                <div id="pay-item-desc" class="text-xs text-slate-300 mt-2 leading-relaxed">
-                    立即獲得 1,200 鑽石 + 50,000 金幣 + SSR 傳奇自選券 + VIP 尊榮徽章
-                </div>
-                <!-- Promo Code Input -->
-                <div class="mt-3 pt-3 border-t border-slate-800 flex gap-2">
-                    <input id="promo-code-input" type="text" placeholder="輸入折扣碼 (試試: BASEBALL2026)" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-400">
-                    <button type="button" onclick="applyPromoCode()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold text-xs cursor-pointer">
-                        套用折扣
-                    </button>
-                </div>
-                <div id="promo-status-text" class="hidden text-[11px] text-emerald-400 font-bold mt-1">✓ 已套用 9 折優惠折扣！</div>
+            <div id="pay-detail-credit" class="mt-2.5 p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-[11px] text-slate-300">
+                安全加密模擬卡號：4532 •••• •••• 8899 (自動帶入測試環境)
+            </div>
+            <div id="pay-detail-alt" class="hidden mt-2.5 p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-[11px] text-cyan-300">
+                點擊下方確認付款將立即完成行動支付 / 超商條碼授權。
             </div>
 
-            <!-- Payment Method Selection -->
-            <div class="space-y-2.5 mb-4">
-                <div class="text-xs font-bold text-slate-300">選擇付款方式</div>
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    <button type="button" onclick="selectPayMethod('CREDIT')" data-pay="CREDIT" class="pay-method-btn py-2.5 px-2 rounded-xl bg-cyan-500/20 border-2 border-cyan-400 text-xs font-bold text-white cursor-pointer">
-                        💳 信用卡
-                    </button>
-                    <button type="button" onclick="selectPayMethod('LINEPAY')" data-pay="LINEPAY" class="pay-method-btn py-2.5 px-2 rounded-xl bg-slate-900 border border-slate-700 text-xs font-bold text-slate-300 cursor-pointer">
-                        🟢 LINE Pay
-                    </button>
-                    <button type="button" onclick="selectPayMethod('APPLEPAY')" data-pay="APPLEPAY" class="pay-method-btn py-2.5 px-2 rounded-xl bg-slate-900 border border-slate-700 text-xs font-bold text-slate-300 cursor-pointer">
-                        🍎 Apple Pay
-                    </button>
-                    <button type="button" onclick="selectPayMethod('CVS')" data-pay="CVS" class="pay-method-btn py-2.5 px-2 rounded-xl bg-slate-900 border border-slate-700 text-xs font-bold text-slate-300 cursor-pointer">
-                        🏪 超商代碼
-                    </button>
-                </div>
-
-                <!-- Dynamic Payment Details Panel -->
-                <div id="pay-detail-credit" class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
-                    <input type="text" value="4532 •••• •••• 8829" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 sport-font" placeholder="信用卡卡號">
-                    <div class="grid grid-cols-2 gap-2">
-                        <input type="text" value="09/29" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 sport-font" placeholder="MM/YY">
-                        <input type="text" value="888" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 sport-font" placeholder="CVC">
-                    </div>
-                </div>
-                <div id="pay-detail-alt" class="hidden p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300">
-                    點擊下方「確認付款」將立即啟動快速行動支付驗證並自動發放虛寶至你的球團帳號。
-                </div>
+            <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between">
+                <span class="text-xs text-slate-400">應付總金額</span>
+                <span id="pay-item-price" class="sport-font text-2xl font-black text-amber-400">NT$ 490</span>
             </div>
-
-            <button id="confirm-pay-btn" onclick="processSimulatedPayment()" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-base tracking-wide cursor-pointer shadow-lg">
+            <button id="confirm-pay-btn" onclick="processSimulatedPayment()" class="mt-3 w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black text-sm cursor-pointer">
                 確認付款並立即發貨
             </button>
         </div>
     </div>
 
-    <!-- 4. ELECTRONIC RECEIPT MODAL -->
-    <div id="receipt-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
-        <div class="glass-panel max-w-md w-full rounded-3xl p-6 text-center border border-emerald-400/40">
-            <div class="w-14 h-14 rounded-full bg-emerald-500/20 border border-emerald-400 text-emerald-300 text-3xl flex items-center justify-center mx-auto mb-3">
-                ✓
+    <!-- Electronic Receipt Modal -->
+    <div id="receipt-modal" class="fixed inset-0 z-40 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="glass-panel rounded-3xl p-6 max-w-md w-full border-2 border-emerald-400/50">
+            <h3 class="text-xl font-black text-emerald-400 text-center mb-3">✅ 付款成功 • 電子交易明細</h3>
+            <div id="receipt-details" class="space-y-2 text-xs bg-slate-900/90 p-4 rounded-2xl border border-slate-800"></div>
+            <button onclick="document.getElementById('receipt-modal').classList.add('hidden')" class="mt-4 w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm cursor-pointer">完成</button>
+        </div>
+    </div>
+
+    <!-- Order History Modal -->
+    <div id="history-modal" class="fixed inset-0 z-40 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="glass-panel rounded-3xl p-5 max-w-md w-full border border-slate-700 relative">
+            <button onclick="document.getElementById('history-modal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-white cursor-pointer">✕</button>
+            <h3 class="text-lg font-black text-white mb-3">📜 歷史購買與付款紀錄</h3>
+            <div id="order-history-list" class="max-h-64 overflow-y-auto space-y-2 text-xs"></div>
+        </div>
+    </div>
+
+    <!-- Friend Lineup & Ace Card Inspector Modal -->
+    <div id="friend-card-modal" class="fixed inset-0 z-40 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="glass-panel rounded-3xl p-5 max-w-2xl w-full border-2 border-cyan-400/50 relative">
+            <button onclick="document.getElementById('friend-card-modal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg cursor-pointer">✕</button>
+            <div id="friend-card-header" class="flex items-center gap-3 pb-3 border-b border-slate-800"></div>
+            <div class="mt-3">
+                <div class="text-xs font-black text-amber-400 mb-2">📋 先發 9 棒打線 & 王牌先發投手名片</div>
+                <div id="friend-card-lineup" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[55vh] overflow-y-auto pr-1"></div>
             </div>
-            <h3 class="text-2xl font-black text-white">付款成功 • 虛寶已發放！</h3>
-            <p class="text-xs text-slate-300 mt-1">感謝你的支持，所有方案特權與獎勵已即時入帳。</p>
-            <div id="receipt-details" class="my-4 bg-slate-900/95 p-4 rounded-2xl border border-slate-800 text-left text-xs space-y-1.5">
+        </div>
+    </div>
+
+    <!-- 4-Player Baseball Squad / Club Co-op League Modal -->
+    <div id="squad-modal" class="fixed inset-0 z-40 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="glass-panel rounded-3xl p-5 max-w-3xl w-full border-2 border-amber-400/50 relative max-h-[85vh] flex flex-col">
+            <button onclick="document.getElementById('squad-modal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg cursor-pointer">✕</button>
+            <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-800">
+                <div>
+                    <span class="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-black">球團公會 • 最多 4 人小隊</span>
+                    <h3 class="text-xl font-black text-white mt-1">🛡️ 職棒聯手打擊小隊 & 每週寶箱</h3>
+                </div>
+            </div>
+            <div id="squad-modal-body" class="flex-1 overflow-y-auto mt-3 space-y-4 pr-1">
                 <!-- Populated via JS -->
             </div>
-            <button onclick="document.getElementById('receipt-modal').classList.add('hidden')" class="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm cursor-pointer">
-                完成並查看戰力
-            </button>
         </div>
     </div>
 
-    <!-- 5. ORDER HISTORY MODAL -->
-    <div id="history-modal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
-        <div class="glass-panel max-w-lg w-full rounded-3xl p-6 border border-slate-700 flex flex-col max-h-[80vh]">
-            <div class="flex justify-between items-center pb-3 border-b border-slate-700">
-                <h3 class="text-lg font-black text-white">📜 帳號購買與付款紀錄</h3>
-                <button onclick="document.getElementById('history-modal').classList.add('hidden')" class="text-slate-400 hover:text-white text-xl cursor-pointer">✕</button>
-            </div>
-            <div id="order-history-list" class="flex-1 overflow-y-auto my-4 space-y-2 pr-1 text-xs">
-                <!-- Populated via JS -->
-            </div>
-        </div>
-    </div>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot, collection, addDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    <!-- Post-Match Summary Modal -->
-    <div id="summary-modal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-30 hidden flex items-center justify-center p-4">
-        <div class="glass-panel max-w-md w-full rounded-3xl p-6 sm:p-8 text-center border border-amber-400/30">
-            <div id="sum-badge" class="inline-block px-3 py-1 rounded-full text-xs font-black bg-amber-500/20 text-amber-300 border border-amber-400/40 mb-2">
-                比賽結束
-            </div>
-            <h2 id="sum-title" class="text-3xl font-black text-white mb-2">逆轉再見勝！</h2>
-            <p id="sum-desc" class="text-slate-300 text-sm mb-5">精彩的九局下半再見安打，全場觀眾起立歡呼！</p>
-            
-            <div class="bg-slate-900/90 rounded-2xl p-4 mb-5 border border-slate-800 space-y-2">
-                <div id="sum-scoreline" class="sport-font text-2xl font-black text-yellow-400">客隊 2 : 3 台北猛象隊</div>
-                <div class="text-xs text-emerald-400 font-bold" id="sum-rewards">獲得獎勵: +600 金幣 • +15 鑽石</div>
-            </div>
+        // Initialize Cloud Backend for Real Friends, Presence & Live Chat
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'pro-baseball-3d-default';
+        let db = null;
+        let auth = null;
+        let cloudUser = null;
+        let myCloudUid = '';
+        let allOnlineDirectory = [];
+        let myFriendsUids = [];
+        let incomingRequests = [];
+        let activeChatPeerUid = 'GLOBAL';
+        let activeChatPeerName = '全頻 / 好友共享頻道';
+        let allSocialMessages = [];
+        let lastReadTimestampByPeer = {};
+        let unreadCountsByPeer = {};
+        let myCurrentSquad = null;
+        let allSquadsList = [];
+        let giftedTodayUids = new Set();
 
-            <div class="grid grid-cols-2 gap-3">
-                <button onclick="returnToLobby()" class="py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm cursor-pointer">
-                    返回大廳
+        async function initRealSocialCloud() {
+            try {
+                if (typeof __firebase_config === 'undefined') {
+                    document.getElementById('cloud-sync-badge').textContent = '● 本機連線模式';
+                    return;
+                }
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                cloudUser = auth.currentUser;
+                if (!cloudUser) return;
+
+                myCloudUid = cloudUser.uid;
+                document.getElementById('my-player-uid').textContent = myCloudUid;
+                document.getElementById('cloud-sync-badge').textContent = '● 真實雲端好友已連線';
+
+                await syncMyPublicProfileToCloud();
+                subscribeToSocialStreams();
+            } catch (err) {
+                document.getElementById('cloud-sync-badge').textContent = '● 離線單機模式';
+            }
+        }
+
+        async function syncMyPublicProfileToCloud() {
+            if (!db || !cloudUser) return;
+            const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'players', myCloudUid);
+            const snap = await getDoc(userDocRef);
+            const existingData = snap.exists() ? snap.data() : {};
+            myFriendsUids = Array.isArray(existingData.friends) ? existingData.friends : [];
+
+            const teamOvrEl = document.getElementById('team-ovr');
+            const currentOvr = teamOvrEl ? Number(teamOvrEl.textContent) || 84 : 84;
+            const displayName = (typeof profile !== 'undefined' && !profile.isGuest)
+                ? profile.username
+                : ((typeof profile !== 'undefined' ? profile.teamName : '台北猛象隊') + '經理');
+
+            // Serialize active starting 9 batters + starting pitcher with levels for Friend Card Inspection
+            let lineupSnapshot = [];
+            let pitcherSnapshot = null;
+            if (typeof profile !== 'undefined' && typeof getPlayerComputedStats === 'function') {
+                lineupSnapshot = profile.lineupBatterIds.map(id => {
+                    const p = getPlayerComputedStats(id);
+                    return { id: p.id, name: p.name, pos: p.pos, rarity: p.rarity, level: p.level, ovr: p.ovr, trait: p.trait };
+                });
+                const sp = getPlayerComputedStats(profile.startingPitcherId);
+                pitcherSnapshot = { id: sp.id, name: sp.name, pos: sp.pos, rarity: sp.rarity, level: sp.level, ovr: sp.ovr, trait: sp.trait };
+            }
+
+            await setDoc(userDocRef, {
+                uid: myCloudUid,
+                nickname: displayName,
+                teamName: typeof profile !== 'undefined' ? profile.teamName : '台北猛象隊',
+                jerseyColor: typeof profile !== 'undefined' ? profile.jerseyColor : '#1d4ed8',
+                ovr: currentOvr,
+                hrs: typeof profile !== 'undefined' ? profile.stats.hrs : 0,
+                wins: typeof profile !== 'undefined' ? profile.stats.wins : 0,
+                lineupSnapshot,
+                pitcherSnapshot,
+                friends: myFriendsUids,
+                lastSeen: Date.now()
+            }, { merge: true });
+
+            if (myCurrentSquad) {
+                await syncMyContributionToSquad();
+            }
+        }
+
+        function subscribeToSocialStreams() {
+            if (!db || !cloudUser) return;
+
+            // 1. Listen to All Public Players Directory
+            const playersCol = collection(db, 'artifacts', appId, 'public', 'data', 'players');
+            onSnapshot(playersCol, (snapshot) => {
+                allOnlineDirectory = [];
+                snapshot.forEach(d => {
+                    const data = d.data();
+                    if (data.uid === myCloudUid) {
+                        myFriendsUids = Array.isArray(data.friends) ? data.friends : [];
+                    } else {
+                        allOnlineDirectory.push(data);
+                    }
+                });
+                renderRealFriendsUI();
+                if (!document.getElementById('squad-modal').classList.contains('hidden')) {
+                    renderSquadModal();
+                }
+            }, (err) => {});
+
+            // 2. Listen to Friend Requests
+            const reqCol = collection(db, 'artifacts', appId, 'public', 'data', 'friend_requests');
+            onSnapshot(reqCol, (snapshot) => {
+                incomingRequests = [];
+                snapshot.forEach(d => {
+                    const r = { id: d.id, ...d.data() };
+                    if (r.toUid === myCloudUid && r.status === 'PENDING') {
+                        incomingRequests.push(r);
+                    }
+                });
+                updateFriendsTabNotificationDot();
+                renderRealFriendsUI();
+            }, (err) => {});
+
+            // 3. Listen to Real-Time Chat (Global + 1-on-1 Direct Messages)
+            const chatCol = collection(db, 'artifacts', appId, 'public', 'data', 'social_messages');
+            onSnapshot(chatCol, (snapshot) => {
+                const msgs = [];
+                snapshot.forEach(d => msgs.push({ id: d.id, ...d.data() }));
+                msgs.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+                allSocialMessages = msgs;
+                recomputeUnreadCounts();
+                renderRealFriendsUI();
+                renderChatMessages();
+            }, (err) => {});
+
+            // 4. Listen to 4-Player Co-op Baseball Squads
+            const squadsCol = collection(db, 'artifacts', appId, 'public', 'data', 'baseball_squads');
+            onSnapshot(squadsCol, (snapshot) => {
+                allSquadsList = [];
+                myCurrentSquad = null;
+                snapshot.forEach(d => {
+                    const sq = { id: d.id, ...d.data() };
+                    allSquadsList.push(sq);
+                    if (Array.isArray(sq.members) && sq.members.some(m => m.uid === myCloudUid)) {
+                        myCurrentSquad = sq;
+                    }
+                });
+                if (!document.getElementById('squad-modal').classList.contains('hidden')) {
+                    renderSquadModal();
+                }
+            }, (err) => {});
+        }
+
+        function recomputeUnreadCounts() {
+            unreadCountsByPeer = {};
+            allSocialMessages.forEach(m => {
+                if (m.isPrivate && m.targetUid === myCloudUid && m.senderUid !== myCloudUid) {
+                    const lastRead = lastReadTimestampByPeer[m.senderUid] || 0;
+                    if ((m.createdAt || 0) > lastRead && activeChatPeerUid !== m.senderUid) {
+                        unreadCountsByPeer[m.senderUid] = (unreadCountsByPeer[m.senderUid] || 0) + 1;
+                    }
+                }
+            });
+            updateFriendsTabNotificationDot();
+        }
+
+        function updateFriendsTabNotificationDot() {
+            const totalUnread = Object.values(unreadCountsByPeer).reduce((a, b) => a + b, 0);
+            const hasAlert = incomingRequests.length > 0 || totalUnread > 0;
+            const dot = document.getElementById('friend-req-dot');
+            if (dot) dot.classList.toggle('hidden', !hasAlert);
+        }
+
+        window.switchChatChannel = function(peerUid, peerName) {
+            activeChatPeerUid = peerUid;
+            activeChatPeerName = peerName;
+            if (peerUid !== 'GLOBAL') {
+                lastReadTimestampByPeer[peerUid] = Date.now();
+                delete unreadCountsByPeer[peerUid];
+            }
+            document.getElementById('chat-target-label').textContent = peerUid === 'GLOBAL'
+                ? '💬 全頻 / 好友共享頻道'
+                : `🔒 與【${peerName}】的 1對1 專屬私訊`;
+            document.getElementById('chat-back-global-btn').classList.toggle('hidden', peerUid === 'GLOBAL');
+            document.getElementById('friend-chat-input').placeholder = peerUid === 'GLOBAL'
+                ? '輸入訊息發送至全頻聊天室...'
+                : `私訊給 ${peerName}...`;
+
+            updateFriendsTabNotificationDot();
+            renderRealFriendsUI();
+            renderChatMessages();
+        };
+
+        window.openFriendProfileCard = function(friendUid) {
+            const friend = allOnlineDirectory.find(p => p.uid === friendUid);
+            if (!friend) return showToast('找不到該好友資料');
+
+            const headerEl = document.getElementById('friend-card-header');
+            headerEl.innerHTML = `
+                <div class="w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xl border border-white/30 shadow" style="background-color: ${friend.jerseyColor || '#1d4ed8'}">⚾</div>
+                <div class="flex-1">
+                    <div class="flex items-center gap-2">
+                        <span class="font-black text-lg text-white">${friend.nickname}</span>
+                        <span class="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 text-xs font-black">${friend.teamName}</span>
+                    </div>
+                    <div class="text-xs text-slate-300 mt-0.5">
+                        球隊總戰力: <strong class="text-amber-400 sport-font">${friend.ovr}</strong> • 生涯全壘打: <strong class="text-cyan-300 sport-font">${friend.hrs || 0}</strong> • 勝場: <strong class="text-emerald-400 sport-font">${friend.wins || 0}</strong>
+                    </div>
+                </div>
+                <button onclick="document.getElementById('friend-card-modal').classList.add('hidden'); switchChatChannel('${friend.uid}', '${friend.nickname}');" class="px-3 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs cursor-pointer">
+                    💬 1對1私訊
                 </button>
-                <button onclick="rematch()" class="py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm cursor-pointer">
-                    再戰一場
-                </button>
-            </div>
-        </div>
-    </div>
+            `;
+
+            const lineup = Array.isArray(friend.lineupSnapshot) && friend.lineupSnapshot.length > 0
+                ? friend.lineupSnapshot
+                : PLAYER_CATALOG_100.slice(0, 9).map(p => ({ ...p, level: 1, ovr: Math.round((p.basePower + p.baseContact + p.baseSpeed) / 3) }));
+            const sp = friend.pitcherSnapshot || { ...PLAYER_CATALOG_100[5], level: 1, ovr: 94 };
+
+            const cardsHtml = lineup.map((p, idx) => `
+                <div class="rounded-xl p-2.5 border rarity-${p.rarity} flex items-center justify-between">
+                    <div>
+                        <div class="flex items-center gap-1.5 text-[10px] font-black">
+                            <span class="px-1.5 py-0.5 rounded bg-blue-600/40 text-blue-200">${idx + 1}棒</span>
+                            <span class="px-1.5 py-0.5 rounded bg-black/50 text-amber-300">${p.rarity}</span>
+                            <span class="${p.level >= 20 ? 'text-yellow-300 animate-pulse' : 'text-cyan-300'} sport-font">Lv.${p.level}${p.level >= 20 ? ' MAX' : ''}</span>
+                        </div>
+                        <div class="font-black text-sm text-white mt-0.5">${p.name} <span class="text-[11px] font-normal text-slate-300">(${p.pos})</span></div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-[10px] text-slate-400">戰力 OVR</div>
+                        <div class="sport-font font-black text-base text-amber-300">${p.ovr}</div>
+                    </div>
+                </div>
+            `).join('');
+
+            const spHtml = `
+                <div class="sm:col-span-2 rounded-xl p-3 border-2 rarity-${sp.rarity} flex items-center justify-between mt-1">
+                    <div>
+                        <div class="flex items-center gap-1.5 text-[10px] font-black">
+                            <span class="px-2 py-0.5 rounded bg-rose-600 text-white">王牌先發投手 SP</span>
+                            <span class="px-1.5 py-0.5 rounded bg-black/50 text-amber-300">${sp.rarity}</span>
+                            <span class="${sp.level >= 20 ? 'text-yellow-300 animate-pulse' : 'text-cyan-300'} sport-font">Lv.${sp.level}${sp.level >= 20 ? ' MAX' : ''}</span>
+                        </div>
+                        <div class="font-black text-base text-white mt-0.5">${sp.name} <span class="text-xs font-normal text-cyan-300">• ${sp.trait || '火球男'}</span></div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-[10px] text-slate-400">投手戰力</div>
+                        <div class="sport-font font-black text-xl text-rose-400">${sp.ovr}</div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('friend-card-lineup').innerHTML = cardsHtml + spHtml;
+            document.getElementById('friend-card-modal').classList.remove('hidden');
+        };
+
+        window.sendFriendRequestByUid = async function(directTargetUid = null) {
+            if (!db || !cloudUser) return;
+            const inputEl = document.getElementById('friend-uid-input');
+            const targetUid = (directTargetUid || inputEl.value || '').trim();
+            if (!targetUid) return showToast('請輸入好友的玩家 UID！');
+            if (targetUid === myCloudUid) return showToast('無法加自己為好友喔！');
+            if (myFriendsUids.includes(targetUid)) return showToast('你們已經是真實好友了！');
+
+            const targetPlayer = allOnlineDirectory.find(p => p.uid === targetUid);
+            if (!targetPlayer) return showToast('找不到此玩家 UID，請確認對方已上線並複製完整 UID');
+
+            const reqId = `${myCloudUid}_${targetUid}`;
+            const myName = (!profile.isGuest ? profile.username : profile.teamName);
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'friend_requests', reqId), {
+                fromUid: myCloudUid,
+                fromName: myName,
+                fromTeam: profile.teamName,
+                fromOvr: Number(document.getElementById('team-ovr').textContent) || 84,
+                toUid: targetUid,
+                status: 'PENDING',
+                createdAt: Date.now()
+            });
+
+            if (!directTargetUid) inputEl.value = '';
+            showToast(`📨 已向【${targetPlayer.nickname}】發送好友申請！`);
+        };
+
+        window.respondFriendRequest = async function(reqId, fromUid, accept) {
+            if (!db || !cloudUser) return;
+            const reqRef = doc(db, 'artifacts', appId, 'public', 'data', 'friend_requests', reqId);
+            if (accept) {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'players', myCloudUid), {
+                    friends: arrayUnion(fromUid)
+                });
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'players', fromUid), {
+                    friends: arrayUnion(myCloudUid)
+                });
+                await updateDoc(reqRef, { status: 'ACCEPTED' });
+                showToast('🤝 已成為真實好友！');
+            } else {
+                await deleteDoc(reqRef);
+                showToast('已婉拒好友邀請');
+            }
+        };
+
+        window.removeRealFriend = async function(friendUid) {
+            if (!db || !cloudUser) return;
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'players', myCloudUid), {
+                friends: arrayRemove(friendUid)
+            });
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'players', friendUid), {
+                friends: arrayRemove(myCloudUid)
+            });
+            showToast('已解除好友關係');
+        };
+
+        window.sendFriendCoinGift = async function(friendUid, friendName) {
+            if (giftedTodayUids.has(friendUid)) return showToast('今日已贈送過金幣給此好友！');
+            giftedTodayUids.add(friendUid);
+            profile.coins += 300;
+            saveProfile();
+            renderRealFriendsUI();
+
+            if (db && cloudUser) {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'social_messages'), {
+                    senderUid: myCloudUid,
+                    senderName: !profile.isGuest ? profile.username : profile.teamName,
+                    targetUid: friendUid,
+                    text: `🎁 送給了【${friendName}】一份友情金幣禮包 (+300 🪙)！`,
+                    isSystemGift: true,
+                    createdAt: Date.now()
+                });
+            }
+            showToast(`🎁 已贈送友情金幣給【${friendName}】，並獲得回禮 +300 🪙！`);
+        };
+
+        window.challengeRealFriend = async function(friendUid, friendName, friendTeam, friendOvr) {
+            if (db && cloudUser) {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'social_messages'), {
+                    senderUid: myCloudUid,
+                    senderName: !profile.isGuest ? profile.username : profile.teamName,
+                    targetUid: friendUid,
+                    text: `⚔️ 向好友【${friendName} (${friendTeam} • 戰力${friendOvr})】發起了 3D 職棒友誼賽對決！`,
+                    isChallenge: true,
+                    createdAt: Date.now()
+                });
+            }
+            showToast(`⚔️ 正在載入好友【${friendName}】的球隊數據，即將開賽！`);
+            setTimeout(() => {
+                startMatch('FULL_GAME');
+                const awayLabel = document.querySelector('#fullgame-scorebug span.text-rose-300');
+                if (awayLabel) awayLabel.textContent = friendTeam.slice(0, 6);
+            }, 650);
+        };
+
+        window.sendRealTimeMessage = async function(e) {
+            e.preventDefault();
+            if (!db || !cloudUser) return;
+            const input = document.getElementById('friend-chat-input');
+            const text = input.value.trim();
+            if (!text) return;
+            input.value = '';
+
+            const isPrivate = activeChatPeerUid !== 'GLOBAL';
+            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'social_messages'), {
+                senderUid: myCloudUid,
+                senderName: !profile.isGuest ? profile.username : profile.teamName,
+                targetUid: activeChatPeerUid,
+                targetName: activeChatPeerName,
+                isPrivate,
+                text,
+                createdAt: Date.now()
+            });
+            if (isPrivate) {
+                lastReadTimestampByPeer[activeChatPeerUid] = Date.now();
+            }
+        };
+
+        function renderRealFriendsUI() {
+            // 1. Incoming Requests
+            const reqSection = document.getElementById('friend-requests-section');
+            reqSection.classList.toggle('hidden', incomingRequests.length === 0);
+            document.getElementById('friend-requests-list').innerHTML = incomingRequests.map(r => `
+                <div class="flex items-center justify-between bg-slate-900/90 px-3 py-2 rounded-xl border border-amber-400/30 text-xs">
+                    <div>
+                        <strong class="text-white">${r.fromName}</strong>
+                        <span class="text-slate-400 ml-1">(${r.fromTeam} • 戰力 ${r.fromOvr})</span>
+                    </div>
+                    <div class="flex gap-1.5">
+                        <button onclick="respondFriendRequest('${r.id}', '${r.fromUid}', true)" class="px-2.5 py-1 rounded-lg bg-emerald-500 text-slate-950 font-black cursor-pointer">接受</button>
+                        <button onclick="respondFriendRequest('${r.id}', '${r.fromUid}', false)" class="px-2 py-1 rounded-lg bg-slate-700 text-slate-300 font-bold cursor-pointer">拒絕</button>
+                    </div>
+                </div>
+            `).join('');
+
+            // 2. Friends List with Avatar Card Inspector & 1-on-1 Private Chat Unread Badges
+            const friendsData = allOnlineDirectory.filter(p => myFriendsUids.includes(p.uid));
+            document.getElementById('friends-count').textContent = friendsData.length;
+            const friendsContainer = document.getElementById('friends-list-container');
+
+            if (friendsData.length === 0) {
+                friendsContainer.innerHTML = '<div class="text-center text-xs text-slate-400 py-6">尚無好友，快複製上方 UID 給朋友或點擊右側大廳在線玩家加好友！</div>';
+            } else {
+                friendsContainer.innerHTML = friendsData.map(f => {
+                    const isOnline = (Date.now() - (f.lastSeen || 0)) < 180000;
+                    const gifted = giftedTodayUids.has(f.uid);
+                    const unread = unreadCountsByPeer[f.uid] || 0;
+                    const isChatActive = activeChatPeerUid === f.uid;
+                    return `
+                        <div class="glass-card rounded-2xl p-3 flex flex-wrap items-center justify-between gap-2 border ${isChatActive ? 'border-cyan-400 bg-cyan-950/30' : 'border-cyan-500/25'}">
+                            <div onclick="openFriendProfileCard('${f.uid}')" class="flex items-center gap-2.5 cursor-pointer group" title="點擊查看好友先發 9 棒與王牌投手名片">
+                                <div class="w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm border border-white/30 group-hover:scale-105 transition relative" style="background-color: ${f.jerseyColor || '#1d4ed8'}">
+                                    ⚾
+                                    <span class="absolute -bottom-1 -right-1 px-1 rounded bg-slate-950 text-[8px] text-cyan-300 border border-cyan-400/40">名片</span>
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="font-black text-sm text-white group-hover:text-cyan-300 transition">${f.nickname}</span>
+                                        <span class="w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-400' : 'bg-slate-500'}"></span>
+                                    </div>
+                                    <div class="text-[11px] text-slate-300">${f.teamName} • 戰力 <strong class="text-amber-400 sport-font">${f.ovr}</strong> • HR <strong class="text-cyan-300 sport-font">${f.hrs || 0}</strong></div>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-1.5">
+                                <button onclick="switchChatChannel('${f.uid}', '${f.nickname}')" class="relative px-2.5 py-1.5 rounded-xl text-[11px] font-black cursor-pointer ${isChatActive ? 'bg-cyan-400 text-slate-950' : 'bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-300 border border-cyan-400/40'}">
+                                    💬 私訊
+                                    ${unread > 0 ? `<span class="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center animate-bounce">${unread}</span>` : ''}
+                                </button>
+                                <button onclick="sendFriendCoinGift('${f.uid}', '${f.nickname}')" ${gifted ? 'disabled' : ''} class="px-2.5 py-1.5 rounded-xl text-[11px] font-black cursor-pointer ${gifted ? 'bg-slate-800 text-slate-500' : 'bg-amber-500 hover:bg-amber-400 text-slate-950'}">
+                                    ${gifted ? '✓ 已送禮' : '🎁 送金幣'}
+                                </button>
+                                <button onclick="challengeRealFriend('${f.uid}', '${f.nickname}', '${f.teamName}', ${f.ovr})" class="px-2.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-black cursor-pointer">
+                                    ⚔️ 友誼賽
+                                </button>
+                                <button onclick="removeRealFriend('${f.uid}')" class="px-2 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 text-[11px] cursor-pointer" title="刪除好友">
+                                    ✕
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // 3. Online Lobby Directory (Non-friends)
+            const strangers = allOnlineDirectory.filter(p => !myFriendsUids.includes(p.uid)).slice(0, 15);
+            const onlineEl = document.getElementById('online-players-list');
+            if (strangers.length === 0) {
+                onlineEl.innerHTML = '<div class="text-[11px] text-slate-400 py-2">目前大廳無其他玩家，開啟另一個視窗即可模擬真人互加好友！</div>';
+            } else {
+                onlineEl.innerHTML = strangers.map(p => `
+                    <div class="flex items-center justify-between bg-slate-900/90 px-2.5 py-1.5 rounded-xl border border-slate-800 text-xs">
+                        <div onclick="openFriendProfileCard('${p.uid}')" class="truncate pr-2 cursor-pointer hover:text-cyan-300">
+                            <span class="font-bold text-white">${p.nickname}</span>
+                            <span class="text-[10px] text-slate-400 ml-1">${p.teamName} (OVR ${p.ovr})</span>
+                        </div>
+                        <button onclick="sendFriendRequestByUid('${p.uid}')" class="px-2 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500 hover:text-slate-950 text-cyan-300 font-black text-[10px] cursor-pointer whitespace-nowrap">
+                            + 加好友
+                        </button>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function renderChatMessages() {
+            const box = document.getElementById('friend-chat-messages');
+            if (!box) return;
+
+            const filtered = allSocialMessages.filter(m => {
+                if (activeChatPeerUid === 'GLOBAL') {
+                    return !m.isPrivate;
+                } else {
+                    return m.isPrivate && (
+                        (m.senderUid === myCloudUid && m.targetUid === activeChatPeerUid) ||
+                        (m.senderUid === activeChatPeerUid && m.targetUid === myCloudUid)
+                    );
+                }
+            }).slice(-40);
+
+            if (filtered.length === 0) {
+                box.innerHTML = activeChatPeerUid === 'GLOBAL'
+                    ? '<div class="text-slate-400 text-[11px]">目前全頻尚無訊息，快發送第一句話吧！</div>'
+                    : `<div class="text-cyan-300/80 text-[11px]">🔒 已開啟與【${activeChatPeerName}】的 1對1 專屬私訊頻道，僅你們兩人可見。</div>`;
+                return;
+            }
+
+            box.innerHTML = filtered.map(m => {
+                const isMe = m.senderUid === myCloudUid;
+                return `
+                    <div class="leading-relaxed ${m.isChallenge ? 'text-rose-300 font-bold' : m.isSystemGift ? 'text-amber-300 font-bold' : ''}">
+                        <span class="font-black ${isMe ? 'text-cyan-400' : 'text-emerald-400'}">${isMe ? '我' : m.senderName}:</span>
+                        <span class="text-slate-200 ml-1">${m.text}</span>
+                    </div>
+                `;
+            }).join('');
+            box.scrollTop = box.scrollHeight;
+        }
+
+        // =========================================================================
+        // 4-PLAYER BASEBALL SQUAD / CLUB CO-OP LEAGUE SYSTEM
+        // =========================================================================
+        window.openSquadModal = function() {
+            document.getElementById('squad-modal').classList.remove('hidden');
+            renderSquadModal();
+        };
+
+        window.createBaseballSquad = async function(e) {
+            e.preventDefault();
+            if (!db || !cloudUser) return;
+            if (myCurrentSquad) return showToast('你已經在一個職棒小隊中了！');
+            const nameInput = document.getElementById('new-squad-name');
+            const squadName = (nameInput.value || '').trim();
+            if (!squadName) return showToast('請輸入小隊名稱！');
+
+            const myName = !profile.isGuest ? profile.username : profile.teamName;
+            const myOvr = Number(document.getElementById('team-ovr').textContent) || 84;
+            const squadId = 'SQ_' + Date.now();
+
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'baseball_squads', squadId), {
+                name: squadName,
+                leaderUid: myCloudUid,
+                members: [{
+                    uid: myCloudUid,
+                    nickname: myName,
+                    teamName: profile.teamName,
+                    ovr: myOvr,
+                    hrs: profile.stats.hrs || 0,
+                    wins: profile.stats.wins || 0
+                }],
+                claimedChestsByUser: {},
+                createdAt: Date.now()
+            });
+            showToast(`🛡️ 已建立 4 人職棒小隊【${squadName}】！`);
+        };
+
+        window.joinBaseballSquad = async function(squadId) {
+            if (!db || !cloudUser) return;
+            if (myCurrentSquad) return showToast('請先退出目前小隊再加入其他小隊');
+            const target = allSquadsList.find(s => s.id === squadId);
+            if (!target) return;
+            if ((target.members || []).length >= 4) return showToast('此小隊已滿員 (4/4 人)！');
+
+            const myName = !profile.isGuest ? profile.username : profile.teamName;
+            const myOvr = Number(document.getElementById('team-ovr').textContent) || 84;
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'baseball_squads', squadId), {
+                members: arrayUnion({
+                    uid: myCloudUid,
+                    nickname: myName,
+                    teamName: profile.teamName,
+                    ovr: myOvr,
+                    hrs: profile.stats.hrs || 0,
+                    wins: profile.stats.wins || 0
+                })
+            });
+            showToast(`🤝 成功加入職棒小隊【${target.name}】！`);
+        };
+
+        window.inviteFriendToSquad = async function(friendUid, friendName) {
+            if (!db || !cloudUser || !myCurrentSquad) return;
+            if ((myCurrentSquad.members || []).length >= 4) return showToast('小隊已達上限 4 人！');
+            const friend = allOnlineDirectory.find(p => p.uid === friendUid);
+            if (!friend) return;
+            if (myCurrentSquad.members.some(m => m.uid === friendUid)) return showToast('該好友已在小隊中！');
+
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'baseball_squads', myCurrentSquad.id), {
+                members: arrayUnion({
+                    uid: friend.uid,
+                    nickname: friend.nickname,
+                    teamName: friend.teamName,
+                    ovr: friend.ovr || 84,
+                    hrs: friend.hrs || 0,
+                    wins: friend.wins || 0
+                })
+            });
+            showToast(`🛡️ 已將好友【${friendName}】編入職棒小隊！`);
+        };
+
+        async function syncMyContributionToSquad() {
+            if (!db || !cloudUser || !myCurrentSquad) return;
+            const myName = !profile.isGuest ? profile.username : profile.teamName;
+            const myOvr = Number(document.getElementById('team-ovr').textContent) || 84;
+            const updatedMembers = (myCurrentSquad.members || []).map(m =>
+                m.uid === myCloudUid
+                    ? { ...m, nickname: myName, teamName: profile.teamName, ovr: myOvr, hrs: profile.stats.hrs || 0, wins: profile.stats.wins || 0 }
+                    : m
+            );
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'baseball_squads', myCurrentSquad.id), {
+                members: updatedMembers
+            });
+        }
+
+        window.leaveBaseballSquad = async function() {
+            if (!db || !cloudUser || !myCurrentSquad) return;
+            const remaining = (myCurrentSquad.members || []).filter(m => m.uid !== myCloudUid);
+            const sqRef = doc(db, 'artifacts', appId, 'public', 'data', 'baseball_squads', myCurrentSquad.id);
+            if (remaining.length === 0) {
+                await deleteDoc(sqRef);
+            } else {
+                await updateDoc(sqRef, { members: remaining });
+            }
+            showToast('已退出職棒小隊');
+        };
+
+        window.claimSquadWeeklyChest = async function(chestKey, shardReward, diamondReward) {
+            if (!db || !cloudUser || !myCurrentSquad) return;
+            const claimedMap = myCurrentSquad.claimedChestsByUser || {};
+            const myClaimed = claimedMap[myCloudUid] || [];
+            if (myClaimed.includes(chestKey)) return showToast('你本週已領取過此寶箱了！');
+
+            const totalHrs = (myCurrentSquad.members || []).reduce((acc, m) => acc + (m.hrs || 0), 0);
+            const totalWins = (myCurrentSquad.members || []).reduce((acc, m) => acc + (m.wins || 0), 0);
+            if (chestKey === 'CHEST_HR_50' && totalHrs < 50) return showToast('小隊全壘打數尚未達 50 支！');
+            if (chestKey === 'CHEST_WIN_20' && totalWins < 20) return showToast('小隊累積勝場尚未達 20 勝！');
+
+            myClaimed.push(chestKey);
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'baseball_squads', myCurrentSquad.id), {
+                [`claimedChestsByUser.${myCloudUid}`]: myClaimed
+            });
+
+            profile.shards += shardReward;
+            profile.diamonds += diamondReward;
+            saveProfile();
+            showToast(`🎁 領取小隊聯賽寶箱：+${shardReward} 🧩 SSR碎片 • +${diamondReward} 💎！`);
+            renderSquadModal();
+        };
+
+        function renderSquadModal() {
+            const body = document.getElementById('squad-modal-body');
+            if (!body) return;
+
+            if (!myCurrentSquad) {
+                const openSquads = allSquadsList.filter(s => (s.members || []).length < 4);
+                body.innerHTML = `
+                    <div class="glass-card rounded-2xl p-4 border border-amber-400/30">
+                        <h4 class="font-black text-sm text-amber-300 mb-2">建立新的 4 人職棒小隊</h4>
+                        <form onsubmit="createBaseballSquad(event)" class="flex gap-2">
+                            <input id="new-squad-name" type="text" maxlength="14" required placeholder="輸入小隊名稱 (例: 台灣全壘打重砲團)" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                            <button type="submit" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs cursor-pointer">
+                                🛡️ 創建小隊
+                            </button>
+                        </form>
+                    </div>
+                    <div>
+                        <h4 class="font-black text-xs text-slate-300 mb-2">公開招募中的職棒小隊 (${openSquads.length})</h4>
+                        <div class="space-y-2">
+                            ${openSquads.length === 0
+                                ? '<div class="text-xs text-slate-400 text-center py-6 bg-slate-900/60 rounded-xl">目前尚無公開小隊，立即上方創建並邀請好友加入！</div>'
+                                : openSquads.map(sq => `
+                                    <div class="glass-card rounded-xl p-3 flex items-center justify-between">
+                                        <div>
+                                            <div class="font-black text-sm text-white">${sq.name} <span class="text-xs text-cyan-300 ml-1">(${(sq.members || []).length}/4 人)</span></div>
+                                            <div class="text-[11px] text-slate-400">成員: ${(sq.members || []).map(m => m.nickname).join('、')}</div>
+                                        </div>
+                                        <button onclick="joinBaseballSquad('${sq.id}')" class="px-3.5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs cursor-pointer">
+                                            加入小隊
+                                        </button>
+                                    </div>
+                                `).join('')}
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            const members = myCurrentSquad.members || [];
+            const totalHrs = members.reduce((acc, m) => acc + (m.hrs || 0), 0);
+            const totalWins = members.reduce((acc, m) => acc + (m.wins || 0), 0);
+            const myClaimed = (myCurrentSquad.claimedChestsByUser || {})[myCloudUid] || [];
+
+            const hrDone = totalHrs >= 50;
+            const hrClaimed = myClaimed.includes('CHEST_HR_50');
+            const winDone = totalWins >= 20;
+            const winClaimed = myClaimed.includes('CHEST_WIN_20');
+
+            const invitableFriends = allOnlineDirectory.filter(f =>
+                myFriendsUids.includes(f.uid) && !members.some(m => m.uid === f.uid)
+            );
+
+            body.innerHTML = `
+                <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-900/90 p-3.5 rounded-2xl border border-amber-400/40">
+                    <div>
+                        <div class="text-lg font-black text-amber-400">🛡️ ${myCurrentSquad.name} <span class="text-xs text-white ml-1">(${members.length}/4 成員)</span></div>
+                        <div class="text-[11px] text-slate-300">全隊成員打出的全壘打與勝場會即時自動累加至每週聯賽進度！</div>
+                    </div>
+                    <button onclick="leaveBaseballSquad()" class="px-3 py-1.5 rounded-xl bg-rose-950 hover:bg-rose-800 border border-rose-500/40 text-rose-300 text-xs font-bold cursor-pointer">
+                        退出小隊
+                    </button>
+                </div>
+
+                <!-- Weekly Co-op Boss / League Chests -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="glass-card rounded-2xl p-4 border ${hrDone ? 'border-amber-400' : 'border-slate-700'}">
+                        <div class="flex justify-between items-center">
+                            <span class="font-black text-sm text-white">🔥 聯手重砲任務：全隊 50 支全壘打</span>
+                            <span class="sport-font font-black text-sm text-amber-400">${Math.min(totalHrs, 50)} / 50 HR</span>
+                        </div>
+                        <div class="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden my-2">
+                            <div class="h-full bg-gradient-to-r from-amber-500 to-orange-500" style="width: ${Math.min(100, (totalHrs / 50) * 100)}%"></div>
+                        </div>
+                        <div class="flex items-center justify-between text-xs mt-2">
+                            <span class="text-purple-300 font-bold">寶箱獎勵: 🧩 60 SSR碎片 + 💎 150</span>
+                            <button onclick="claimSquadWeeklyChest('CHEST_HR_50', 60, 150)" ${!hrDone || hrClaimed ? 'disabled' : ''} class="px-3 py-1.5 rounded-xl font-black cursor-pointer ${hrClaimed ? 'bg-slate-800 text-slate-500' : hrDone ? 'bg-amber-400 text-slate-950 animate-pulse' : 'bg-slate-800 text-slate-400'}">
+                                ${hrClaimed ? '✓ 已領取' : hrDone ? '領取 SSR 寶箱' : '累積中'}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-2xl p-4 border ${winDone ? 'border-cyan-400' : 'border-slate-700'}">
+                        <div class="flex justify-between items-center">
+                            <span class="font-black text-sm text-white">🏆 聯手制霸任務：全隊累積 20 勝</span>
+                            <span class="sport-font font-black text-sm text-cyan-400">${Math.min(totalWins, 20)} / 20 勝</span>
+                        </div>
+                        <div class="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden my-2">
+                            <div class="h-full bg-gradient-to-r from-cyan-500 to-blue-500" style="width: ${Math.min(100, (totalWins / 20) * 100)}%"></div>
+                        </div>
+                        <div class="flex items-center justify-between text-xs mt-2">
+                            <span class="text-purple-300 font-bold">寶箱獎勵: 🧩 80 SSR碎片 + 💎 200</span>
+                            <button onclick="claimSquadWeeklyChest('CHEST_WIN_20', 80, 200)" ${!winDone || winClaimed ? 'disabled' : ''} class="px-3 py-1.5 rounded-xl font-black cursor-pointer ${winClaimed ? 'bg-slate-800 text-slate-500' : winDone ? 'bg-cyan-400 text-slate-950 animate-pulse' : 'bg-slate-800 text-slate-400'}">
+                                ${winClaimed ? '✓ 已領取' : winDone ? '領取 SSR 寶箱' : '累積中'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Squad 4 Member Roster -->
+                <div>
+                    <h4 class="text-xs font-black text-slate-300 mb-2">小隊成員貢獻榜 (${members.length}/4)</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        ${members.map(m => `
+                            <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-2.5 flex items-center justify-between text-xs">
+                                <div>
+                                    <div class="font-black text-white">${m.nickname} ${m.uid === myCurrentSquad.leaderUid ? '<span class="text-[10px] text-amber-400">👑隊長</span>' : ''}</div>
+                                    <div class="text-[11px] text-slate-400">${m.teamName} • 戰力 ${m.ovr}</div>
+                                </div>
+                                <div class="text-right sport-font">
+                                    <div class="text-amber-300 font-bold">${m.hrs || 0} HR</div>
+                                    <div class="text-cyan-300 font-bold">${m.wins || 0} 勝</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <!-- Invite Friends into Squad -->
+                ${members.length < 4 && invitableFriends.length > 0 ? `
+                    <div class="pt-2 border-t border-slate-800">
+                        <div class="text-xs font-black text-emerald-400 mb-1.5">➕ 邀請真實好友加入小隊 (剩餘 ${4 - members.length} 席)</div>
+                        <div class="flex flex-wrap gap-1.5">
+                            ${invitableFriends.map(f => `
+                                <button onclick="inviteFriendToSquad('${f.uid}', '${f.nickname}')" class="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500 hover:text-slate-950 border border-emerald-400/40 text-emerald-300 font-black text-xs cursor-pointer">
+                                    + 邀請 ${f.nickname}
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+            `;
+        }
+
+        window.addEventListener('load', () => {
+            initRealSocialCloud();
+            setInterval(() => { syncMyPublicProfileToCloud(); }, 30000);
+        });
+    </script>
 
     <script>
         // =========================================================================
@@ -1790,16 +2545,80 @@
         // =========================================================================
         // 4. CORE GAME STATE & PITCH CATALOG
         // =========================================================================
+        const DIFFICULTY_PRESETS = {
+            EASY: {
+                label: '🌱 休閒新秀',
+                speedMult: 0.78,
+                durationMult: 1.48,
+                breakMult: 0.65,
+                timingWindow: 0.28,
+                pciRadiusBonus: 0.24,
+                pciSizeClass: 'w-16 h-16 sm:w-20 sm:h-20',
+                strikeRate: 0.86,
+                zoneSpread: 1.25,
+                exitPowerMult: 1.16,
+                aiHitBase: 0.28,
+                fielderSpeed: 8.2,
+                rewardMult: 0.85
+            },
+            NORMAL: {
+                label: '⚾ 職業標準',
+                speedMult: 0.92,
+                durationMult: 1.18,
+                breakMult: 0.85,
+                timingWindow: 0.21,
+                pciRadiusBonus: 0.12,
+                pciSizeClass: 'w-14 h-14 sm:w-16 sm:h-16',
+                strikeRate: 0.76,
+                zoneSpread: 1.52,
+                exitPowerMult: 1.05,
+                aiHitBase: 0.38,
+                fielderSpeed: 9.5,
+                rewardMult: 1.0
+            },
+            HARD: {
+                label: '🔥 明星硬派',
+                speedMult: 1.0,
+                durationMult: 1.0,
+                breakMult: 1.0,
+                timingWindow: 0.16,
+                pciRadiusBonus: 0.0,
+                pciSizeClass: 'w-11 h-11 sm:w-14 sm:h-14',
+                strikeRate: 0.66,
+                zoneSpread: 1.75,
+                exitPowerMult: 0.98,
+                aiHitBase: 0.48,
+                fielderSpeed: 10.6,
+                rewardMult: 1.35
+            },
+            LEGEND: {
+                label: '💀 傳奇地獄',
+                speedMult: 1.09,
+                durationMult: 0.86,
+                breakMult: 1.22,
+                timingWindow: 0.12,
+                pciRadiusBonus: -0.07,
+                pciSizeClass: 'w-9 h-9 sm:w-11 sm:h-11',
+                strikeRate: 0.58,
+                zoneSpread: 1.92,
+                exitPowerMult: 0.93,
+                aiHitBase: 0.58,
+                fielderSpeed: 11.8,
+                rewardMult: 1.8
+            }
+        };
+
         const PITCH_CATALOG = [
-            { name: '四縫線速球 4-Seam', speedKmh: 132, duration: 0.78, breakX: 0.01, breakY: 0.04, hex: 0xef4444 },
-            { name: '大曲球 Curveball', speedKmh: 112, duration: 0.92, breakX: -0.14, breakY: -0.25, hex: 0x38bdf8 },
-            { name: '銳利滑球 Slider', speedKmh: 121, duration: 0.85, breakX: 0.22, breakY: -0.11, hex: 0xa855f7 },
-            { name: '變速球 Changeup', speedKmh: 115, duration: 0.90, breakX: -0.09, breakY: -0.15, hex: 0x10b981 }
+            { name: '四縫線速球 4-Seam', speedKmh: 156, duration: 0.50, breakX: 0.03, breakY: 0.07, hex: 0xef4444 },
+            { name: '大曲球 Curveball', speedKmh: 130, duration: 0.64, breakX: -0.24, breakY: -0.42, hex: 0x38bdf8 },
+            { name: '銳利滑球 Slider', speedKmh: 144, duration: 0.56, breakX: 0.36, breakY: -0.20, hex: 0xa855f7 },
+            { name: '變速球 Changeup', speedKmh: 134, duration: 0.62, breakX: -0.18, breakY: -0.26, hex: 0x10b981 }
         ];
 
         const game = {
             screen: 'LOBBY',
             mode: 'FULL_GAME',
+            difficulty: 'NORMAL',
             derbyRule: 'TIME',
             phase: 'IDLE',
             timer: 0,
@@ -1835,6 +2654,27 @@
             derbyOutsLeft: 10,
             fireballActive: false
         };
+
+        function getDiffConfig() {
+            return DIFFICULTY_PRESETS[game.difficulty] || DIFFICULTY_PRESETS.NORMAL;
+        }
+
+        function setDifficulty(level) {
+            if (!DIFFICULTY_PRESETS[level]) return;
+            game.difficulty = level;
+            const cfg = getDiffConfig();
+
+            const lobbySel = document.getElementById('lobby-difficulty-select');
+            const hudSel = document.getElementById('hud-difficulty-select');
+            if (lobbySel) lobbySel.value = level;
+            if (hudSel) hudSel.value = level;
+
+            const pciEl = document.getElementById('pci-cursor');
+            if (pciEl) {
+                pciEl.className = `absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 ${cfg.pciSizeClass} rounded-full border-2 border-amber-400 bg-amber-400/20 shadow-[0_0_15px_rgba(250,204,21,0.5)] pointer-events-none flex items-center justify-center transition-all`;
+            }
+            showToast(`🎚️ 難度已切換為【${cfg.label}】(獎勵倍率 ${cfg.rewardMult}x)`);
+        }
 
         // =========================================================================
         // 5. TEAM CUSTOMIZATION & QUEST / EVENT HELPERS
@@ -2776,21 +3616,30 @@
         }
 
         function launchAIPitch() {
-            const pitch = game.mode === 'DERBY'
-                ? PITCH_CATALOG[0] // Derby serves hittable fastballs
+            const cfg = getDiffConfig();
+            const rawPitch = (game.mode === 'DERBY' && Math.random() < 0.65)
+                ? PITCH_CATALOG[0]
                 : PITCH_CATALOG[Math.floor(Math.random() * PITCH_CATALOG.length)];
+
+            const pitch = {
+                ...rawPitch,
+                speedKmh: Math.round(rawPitch.speedKmh * cfg.speedMult),
+                duration: rawPitch.duration * cfg.durationMult,
+                breakX: rawPitch.breakX * cfg.breakMult,
+                breakY: rawPitch.breakY * cfg.breakMult
+            };
             game.currentPitch = pitch;
 
-            const throwStrike = game.mode === 'DERBY' ? true : Math.random() < 0.85;
+            const throwStrike = game.mode === 'DERBY' ? Math.random() < 0.90 : Math.random() < cfg.strikeRate;
             game.isStrikeZonePitch = throwStrike;
 
             let nx, ny;
             if (throwStrike) {
-                nx = (Math.random() - 0.5) * 1.15;
-                ny = (Math.random() - 0.5) * 1.15;
+                nx = (Math.random() - 0.5) * cfg.zoneSpread;
+                ny = (Math.random() - 0.5) * cfg.zoneSpread;
             } else {
-                nx = (Math.random() > 0.5 ? 1 : -1) * (1.1 + Math.random() * 0.25);
-                ny = (Math.random() - 0.5) * 1.2;
+                nx = (Math.random() > 0.5 ? 1 : -1) * (1.08 + Math.random() * 0.45);
+                ny = (Math.random() - 0.5) * 1.65;
             }
 
             game.pitchTargetWorld.set(nx * (szWidth * 0.5), szCenterY - ny * (szHeight * 0.5), 0);
@@ -2806,7 +3655,15 @@
             audio.init();
             if (game.phase !== 'AWAIT_PITCH') return;
 
-            const pitch = PITCH_CATALOG[game.selectedPitchIdx];
+            const cfg = getDiffConfig();
+            const rawPitch = PITCH_CATALOG[game.selectedPitchIdx];
+            const pitch = {
+                ...rawPitch,
+                speedKmh: Math.round(rawPitch.speedKmh * cfg.speedMult),
+                duration: rawPitch.duration * cfg.durationMult,
+                breakX: rawPitch.breakX * cfg.breakMult,
+                breakY: rawPitch.breakY * cfg.breakMult
+            };
             const sp = getPlayerComputedStats(profile.startingPitcherId);
             game.currentPitch = pitch;
             game.pitchCount++;
@@ -2846,8 +3703,9 @@
             setTimeout(() => btn.classList.remove('pressed'), 120);
 
             if (game.phase === 'PITCHING') {
+                const cfg = getDiffConfig();
                 const progress = game.timer / game.currentPitch.duration;
-                const timingDiff = progress - 0.94;
+                const timingDiff = progress - 0.96;
                 const absTiming = Math.abs(timingDiff);
 
                 const ballNormX = ballMesh.position.x / (szWidth * 0.5);
@@ -2856,11 +3714,11 @@
 
                 const activeBatterId = profile.lineupBatterIds[game.batterIdx % 9];
                 const batter = getPlayerComputedStats(activeBatterId);
-                const contactRadius = 0.65 + (batter.contact / 100) * 0.30;
+                const contactRadius = Math.max(0.24, 0.34 + cfg.pciRadiusBonus + (batter.contact / 100) * 0.22);
 
-                if (absTiming <= 0.28 && pciDist <= contactRadius) {
+                if (absTiming <= cfg.timingWindow && pciDist <= contactRadius) {
                     launchBattedBall(timingDiff, absTiming, pciDist, contactRadius, batter.power);
-                } else if (absTiming > 0.28) {
+                } else if (absTiming > cfg.timingWindow) {
                     showToast(timingDiff < 0 ? '揮棒過早！' : '揮棒過慢！');
                 } else {
                     showToast('PCI 瞄準偏移揮空！');
@@ -2869,17 +3727,18 @@
         }
 
         function launchBattedBall(timingDiff, absTiming, pciDist, contactRadius, batterPower) {
+            const cfg = getDiffConfig();
             game.phase = 'HIT_FLIGHT';
-            const timingQuality = Math.max(0, 1 - absTiming / 0.28);
+            const timingQuality = Math.max(0, 1 - absTiming / cfg.timingWindow);
             const pciQuality = Math.max(0, 1 - pciDist / contactRadius);
-            const totalQuality = Math.min(1, (timingQuality * 0.48 + pciQuality * 0.52) * 1.18);
+            const totalQuality = Math.min(1, (timingQuality * 0.45 + pciQuality * 0.55) * 1.02);
 
             audio.playBatCrack(totalQuality);
 
-            const sprayAngle = THREE.MathUtils.clamp(timingDiff * 3.2, -0.82, 0.82);
-            const powerMult = 0.95 + (batterPower / 100) * 0.36 + (game.fireballActive ? 0.16 : 0);
-            const exitSpeedMs = (28 + totalQuality * 27) * powerMult;
-            const launchDeg = 12 + pciQuality * 23 + (Math.random() - 0.3) * 6;
+            const sprayAngle = THREE.MathUtils.clamp(timingDiff * 4.4, -0.88, 0.88);
+            const powerMult = (0.88 + (batterPower / 100) * 0.34 + (game.fireballActive ? 0.15 : 0)) * cfg.exitPowerMult;
+            const exitSpeedMs = (24 + totalQuality * 26) * powerMult;
+            const launchDeg = 10 + pciQuality * 22 + (Math.random() - 0.38) * 8;
             const launchRad = THREE.MathUtils.degToRad(launchDeg);
 
             game.isFlyBall = launchDeg > 19;
@@ -3053,19 +3912,20 @@
         }
 
         function finishEntireMatch() {
+            const cfg = getDiffConfig();
             game.phase = 'GAMEOVER';
             const sumModal = document.getElementById('summary-modal');
 
             if (game.mode === 'DERBY') {
                 trackProgress('q_derby', null, 1);
                 if (game.derbyScore > profile.stats.derbyHigh) profile.stats.derbyHigh = game.derbyScore;
-                const coinReward = 400 + game.derbyHrs * 120;
-                const diaReward = 10 + game.derbyHrs * 3;
+                const coinReward = Math.round((400 + game.derbyHrs * 120) * cfg.rewardMult);
+                const diaReward = Math.round((10 + game.derbyHrs * 3) * cfg.rewardMult);
                 profile.coins += coinReward * (profile.isVip ? 2 : 1);
                 profile.diamonds += diaReward * (profile.isVip ? 2 : 1);
                 saveProfile();
 
-                document.getElementById('sum-badge').textContent = '全壘打大賽結算';
+                document.getElementById('sum-badge').textContent = `全壘打大賽結算 (${cfg.label})`;
                 document.getElementById('sum-title').textContent = `轟出 ${game.derbyHrs} 支全壘打！`;
                 document.getElementById('sum-desc').textContent = '驚人的長打火力震撼全場！';
                 document.getElementById('sum-scoreline').textContent = `總積分: ${game.derbyScore.toLocaleString()} PTS`;
@@ -3073,13 +3933,13 @@
             } else {
                 const won = game.homeScore > game.awayScore;
                 if (won) profile.stats.wins++;
-                const coinReward = won ? 800 : 350;
-                const diaReward = won ? 20 : 5;
+                const coinReward = Math.round((won ? 800 : 350) * cfg.rewardMult);
+                const diaReward = Math.round((won ? 20 : 5) * cfg.rewardMult);
                 profile.coins += coinReward * (profile.isVip ? 2 : 1);
                 profile.diamonds += diaReward * (profile.isVip ? 2 : 1);
                 saveProfile();
 
-                document.getElementById('sum-badge').textContent = '比賽正式結束';
+                document.getElementById('sum-badge').textContent = `比賽正式結束 (${cfg.label})`;
                 document.getElementById('sum-title').textContent = won ? '🏆 逆轉勝利！' : '惜敗對手';
                 document.getElementById('sum-desc').textContent = won ? '全隊上下一心拿下精彩勝利，球迷瘋狂歡呼！' : '調整打線與球具裝備，下一場討回來！';
                 document.getElementById('sum-scoreline').textContent = `客隊 ${game.awayScore} : ${game.homeScore} ${profile.teamName}`;
@@ -3176,13 +4036,14 @@
                     dot.style.top = `${THREE.MathUtils.clamp(dotY, 0, 100)}%`;
 
                     // AI Batter Swing when player is pitching!
-                    if (game.mode === 'FULL_GAME' && game.isTopInning && !game.swingInitiated && t >= 0.92) {
+                    if (game.mode === 'FULL_GAME' && game.isTopInning && !game.swingInitiated && t >= 0.94) {
+                        const cfg = getDiffConfig();
                         game.swingInitiated = true;
-                        const aiSwings = game.isStrikeZonePitch ? Math.random() < 0.72 : Math.random() < 0.24;
+                        const aiSwings = game.isStrikeZonePitch ? Math.random() < 0.84 : Math.random() < 0.14;
                         if (aiSwings) {
-                            const aiHits = Math.random() < (0.34 + ((100 - game.stamina) / 100) * 0.28);
+                            const aiHits = Math.random() < (cfg.aiHitBase + ((100 - game.stamina) / 100) * 0.34);
                             if (aiHits) {
-                                launchBattedBall((Math.random() - 0.5) * 0.14, 0.08, 0.15, 0.5, 76);
+                                launchBattedBall((Math.random() - 0.5) * 0.12, 0.05, 0.10, 0.42, 86);
                             }
                         }
                     }
@@ -3203,12 +4064,13 @@
                     const isFoul = Math.abs(ballMesh.position.x) > Math.abs(ballMesh.position.z) || ballMesh.position.z > 0.2;
 
                     // Fielders sprint toward ball
+                    const fSpeed = getDiffConfig().fielderSpeed;
                     fielders.forEach(f => {
                         const dir = new THREE.Vector3().subVectors(ballMesh.position, f.position);
                         dir.y = 0;
                         if (dir.length() > 0.6) {
                             dir.normalize();
-                            f.position.addScaledVector(dir, 7.8 * dt);
+                            f.position.addScaledVector(dir, fSpeed * dt);
                             f.lookAt(ballMesh.position.x, 0, ballMesh.position.z);
                         }
                     });
@@ -3432,6 +4294,7 @@
 
         window.onload = () => {
             setJerseyColor(profile.jerseyColor);
+            setDifficulty('NORMAL');
             updateLobbyUI();
             animate();
         };
