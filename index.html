@@ -715,8 +715,8 @@
                 <div id="zone-ball-dot" class="hidden absolute w-4 h-4 -ml-2 -mt-2 rounded-full bg-white border-2 border-rose-500 shadow-[0_0_10px_#fff] pointer-events-none"></div>
 
                 <!-- Batting PCI Sweet-Spot Reticle -->
-                <div id="pci-cursor" class="absolute w-14 h-10 -ml-7 -mt-5 rounded-full border-2 border-amber-400 bg-amber-400/20 shadow-[0_0_12px_rgba(250,204,21,0.7)] pointer-events-none flex items-center justify-center" style="left: 50%; top: 50%;">
-                    <div class="w-2 h-2 rounded-full bg-amber-300"></div>
+                <div id="pci-cursor" class="absolute w-20 h-14 -ml-10 -mt-7 rounded-full border-2 border-amber-400 bg-amber-400/25 shadow-[0_0_14px_rgba(250,204,21,0.8)] pointer-events-none flex items-center justify-center" style="left: 50%; top: 50%;">
+                    <div class="w-2.5 h-2.5 rounded-full bg-amber-300"></div>
                 </div>
 
                 <!-- Pitching Target Cursor -->
@@ -1791,10 +1791,10 @@
         // 4. CORE GAME STATE & PITCH CATALOG
         // =========================================================================
         const PITCH_CATALOG = [
-            { name: '四縫線速球 4-Seam', speedKmh: 156, duration: 0.44, breakX: 0.02, breakY: 0.08, hex: 0xef4444 },
-            { name: '大曲球 Curveball', speedKmh: 128, duration: 0.56, breakX: -0.22, breakY: -0.42, hex: 0x38bdf8 },
-            { name: '銳利滑球 Slider', speedKmh: 141, duration: 0.50, breakX: 0.36, breakY: -0.18, hex: 0xa855f7 },
-            { name: '變速球 Changeup', speedKmh: 133, duration: 0.54, breakX: -0.14, breakY: -0.24, hex: 0x10b981 }
+            { name: '四縫線速球 4-Seam', speedKmh: 132, duration: 0.78, breakX: 0.01, breakY: 0.04, hex: 0xef4444 },
+            { name: '大曲球 Curveball', speedKmh: 112, duration: 0.92, breakX: -0.14, breakY: -0.25, hex: 0x38bdf8 },
+            { name: '銳利滑球 Slider', speedKmh: 121, duration: 0.85, breakX: 0.22, breakY: -0.11, hex: 0xa855f7 },
+            { name: '變速球 Changeup', speedKmh: 115, duration: 0.90, breakX: -0.09, breakY: -0.15, hex: 0x10b981 }
         ];
 
         const game = {
@@ -2781,16 +2781,16 @@
                 : PITCH_CATALOG[Math.floor(Math.random() * PITCH_CATALOG.length)];
             game.currentPitch = pitch;
 
-            const throwStrike = game.mode === 'DERBY' ? true : Math.random() < 0.72;
+            const throwStrike = game.mode === 'DERBY' ? true : Math.random() < 0.85;
             game.isStrikeZonePitch = throwStrike;
 
             let nx, ny;
             if (throwStrike) {
-                nx = (Math.random() - 0.5) * 1.45;
-                ny = (Math.random() - 0.5) * 1.45;
+                nx = (Math.random() - 0.5) * 1.15;
+                ny = (Math.random() - 0.5) * 1.15;
             } else {
-                nx = (Math.random() > 0.5 ? 1 : -1) * (1.15 + Math.random() * 0.35);
-                ny = (Math.random() - 0.5) * 1.5;
+                nx = (Math.random() > 0.5 ? 1 : -1) * (1.1 + Math.random() * 0.25);
+                ny = (Math.random() - 0.5) * 1.2;
             }
 
             game.pitchTargetWorld.set(nx * (szWidth * 0.5), szCenterY - ny * (szHeight * 0.5), 0);
@@ -2847,7 +2847,7 @@
 
             if (game.phase === 'PITCHING') {
                 const progress = game.timer / game.currentPitch.duration;
-                const timingDiff = progress - 0.95;
+                const timingDiff = progress - 0.94;
                 const absTiming = Math.abs(timingDiff);
 
                 const ballNormX = ballMesh.position.x / (szWidth * 0.5);
@@ -2856,11 +2856,11 @@
 
                 const activeBatterId = profile.lineupBatterIds[game.batterIdx % 9];
                 const batter = getPlayerComputedStats(activeBatterId);
-                const contactRadius = 0.42 + (batter.contact / 100) * 0.24;
+                const contactRadius = 0.65 + (batter.contact / 100) * 0.30;
 
-                if (absTiming <= 0.18 && pciDist <= contactRadius) {
+                if (absTiming <= 0.28 && pciDist <= contactRadius) {
                     launchBattedBall(timingDiff, absTiming, pciDist, contactRadius, batter.power);
-                } else if (absTiming > 0.18) {
+                } else if (absTiming > 0.28) {
                     showToast(timingDiff < 0 ? '揮棒過早！' : '揮棒過慢！');
                 } else {
                     showToast('PCI 瞄準偏移揮空！');
@@ -2870,16 +2870,16 @@
 
         function launchBattedBall(timingDiff, absTiming, pciDist, contactRadius, batterPower) {
             game.phase = 'HIT_FLIGHT';
-            const timingQuality = Math.max(0, 1 - absTiming / 0.18);
+            const timingQuality = Math.max(0, 1 - absTiming / 0.28);
             const pciQuality = Math.max(0, 1 - pciDist / contactRadius);
-            const totalQuality = timingQuality * 0.48 + pciQuality * 0.52;
+            const totalQuality = Math.min(1, (timingQuality * 0.48 + pciQuality * 0.52) * 1.18);
 
             audio.playBatCrack(totalQuality);
 
-            const sprayAngle = THREE.MathUtils.clamp(timingDiff * 4.5, -0.85, 0.85);
-            const powerMult = 0.85 + (batterPower / 100) * 0.32 + (game.fireballActive ? 0.14 : 0);
-            const exitSpeedMs = (24 + totalQuality * 26) * powerMult;
-            const launchDeg = 8 + pciQuality * 25 + (Math.random() - 0.35) * 7;
+            const sprayAngle = THREE.MathUtils.clamp(timingDiff * 3.2, -0.82, 0.82);
+            const powerMult = 0.95 + (batterPower / 100) * 0.36 + (game.fireballActive ? 0.16 : 0);
+            const exitSpeedMs = (28 + totalQuality * 27) * powerMult;
+            const launchDeg = 12 + pciQuality * 23 + (Math.random() - 0.3) * 6;
             const launchRad = THREE.MathUtils.degToRad(launchDeg);
 
             game.isFlyBall = launchDeg > 19;
